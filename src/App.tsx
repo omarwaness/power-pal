@@ -49,9 +49,11 @@ function App() {
               </div>
             </div>
 
-            <MeterDialog
-              onCreated={() => setOverviewRefreshKey(current => current + 1)}
-            />
+            {activeSection === "overview" && (
+              <MeterDialog
+                onCreated={() => setOverviewRefreshKey(current => current + 1)}
+              />
+            )}
           </div>
         </header>
 
