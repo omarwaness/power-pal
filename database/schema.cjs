@@ -1,9 +1,27 @@
-const Database = require("better-sqlite3");
+const fs = require("fs");
 const path = require("path");
+const Database = require("better-sqlite3");
 
-const db = new Database(path.join(process.cwd(), "sqlite.db"));
+let db;
 
-db.exec(`
+function ensureDb() {
+  if (!db) {
+    throw new Error("Database has not been initialized.");
+  }
+
+  return db;
+}
+
+function initDatabase(databasePath = path.join(process.cwd(), "sqlite.db")) {
+  if (db) {
+    return db;
+  }
+
+  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+  db = new Database(databasePath);
+  db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
+  db.exec(`
   CREATE TABLE IF NOT EXISTS meter (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL
@@ -23,19 +41,22 @@ db.exec(`
   );
 `);
 
+  return db;
+}
+
 const createMeter = ({ name }) => {
-  return db.prepare(`
+  return ensureDb().prepare(`
     INSERT INTO meter (name)
     VALUES (?)
   `).run(name);
 };
 
 const getMeters = () => {
-  return db.prepare(`SELECT * FROM meter`).all();
+  return ensureDb().prepare(`SELECT * FROM meter`).all();
 };
 
 const updateMeter = (id, { name }) => {
-  return db.prepare(`
+  return ensureDb().prepare(`
     UPDATE meter
     SET name = ?
     WHERE id = ?
@@ -43,7 +64,7 @@ const updateMeter = (id, { name }) => {
 };
 
 const deleteMeter = (id) => {
-  return db.prepare(`
+  return ensureDb().prepare(`
     DELETE FROM meter
     WHERE id = ?
   `).run(id);
@@ -58,7 +79,7 @@ const createReading = ({
 }) => {
   const difference = production - consumption;
 
-  return db.prepare(`
+  return ensureDb().prepare(`
     INSERT INTO readings (
       meter_id,
       date,
@@ -79,7 +100,7 @@ const createReading = ({
 };
 
 const getReadings = (meterId) => {
-  return db.prepare(`
+  return ensureDb().prepare(`
     SELECT * FROM readings
     WHERE meter_id = ?
     ORDER BY date DESC
@@ -93,7 +114,7 @@ const getReadingsByMeterId = (meterId) => {
 const updateReading = (id, { production, consumption, gas }) => {
   const difference = production - consumption;
 
-  return db.prepare(`
+  return ensureDb().prepare(`
     UPDATE readings
     SET production = ?,
         consumption = ?,
@@ -104,14 +125,14 @@ const updateReading = (id, { production, consumption, gas }) => {
 };
 
 const deleteReading = (id) => {
-  return db.prepare(`
+  return ensureDb().prepare(`
     DELETE FROM readings
     WHERE id = ?
   `).run(id);
 };
 
 module.exports = {
-  db,
+  initDatabase,
   createMeter,
   getMeters,
   updateMeter,

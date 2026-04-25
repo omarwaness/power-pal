@@ -1,12 +1,31 @@
-import Database from "better-sqlite3";
+import fs from "fs";
 import path from "path";
+import Database from "better-sqlite3";
 import type { MeterRequest, MeterResponse } from "../types/meter";
 import type { ReadingRequest, ReadingResponse } from "../types/readings";
 
-const db = new Database(path.join(process.cwd(), "sqlite.db"));
+let db: Database.Database | null = null;
 
-// SCHEMA
-db.exec(`
+function ensureDb(): Database.Database {
+  if (!db) {
+    throw new Error("Database has not been initialized.");
+  }
+
+  return db;
+}
+
+export function initDatabase(databasePath = path.join(process.cwd(), "sqlite.db")) {
+  if (db) {
+    return db;
+  }
+
+  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+  db = new Database(databasePath);
+  db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
+
+  // SCHEMA
+  db.exec(`
   CREATE TABLE IF NOT EXISTS meter (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL
@@ -26,20 +45,23 @@ db.exec(`
   );
 `);
 
+  return db;
+}
+
 // METER CRUD
 export const createMeter = ({ name }: MeterRequest) => {
-  return db.prepare(`
+  return ensureDb().prepare(`
     INSERT INTO meter (name)
     VALUES (?)
   `).run(name);
 };
 
 export const getMeters = (): MeterResponse[] => {
-  return db.prepare(`SELECT * FROM meter`).all() as MeterResponse[];
+  return ensureDb().prepare(`SELECT * FROM meter`).all() as MeterResponse[];
 };
 
 export const updateMeter = (id: number, { name }: MeterRequest) => {
-  return db.prepare(`
+  return ensureDb().prepare(`
     UPDATE meter
     SET name = ?
     WHERE id = ?
@@ -47,7 +69,7 @@ export const updateMeter = (id: number, { name }: MeterRequest) => {
 };
 
 export const deleteMeter = (id: number) => {
-  return db.prepare(`
+  return ensureDb().prepare(`
     DELETE FROM meter
     WHERE id = ?
   `).run(id);
@@ -63,7 +85,7 @@ export const createReading = ({
 }: ReadingRequest) => {
   const difference = production - consumption;
 
-  return db.prepare(`
+  return ensureDb().prepare(`
     INSERT INTO readings (
       meter_id,
       date,
@@ -84,7 +106,7 @@ export const createReading = ({
 };
 
 export const getReadings = (meter_id: number): ReadingResponse[] => {
-  return db.prepare(`
+  return ensureDb().prepare(`
     SELECT * FROM readings
     WHERE meter_id = ?
     ORDER BY date DESC
@@ -101,7 +123,7 @@ export const updateReading = (
 ) => {
   const difference = production - consumption;
 
-  return db.prepare(`
+  return ensureDb().prepare(`
     UPDATE readings
     SET production = ?,
         consumption = ?,
@@ -112,10 +134,14 @@ export const updateReading = (
 };
 
 export const deleteReading = (id: number) => {
-  return db.prepare(`
+  return ensureDb().prepare(`
     DELETE FROM readings
     WHERE id = ?
   `).run(id);
 };
 
-export default db;
+export function getDatabase() {
+  return ensureDb();
+}
+
+export default getDatabase;

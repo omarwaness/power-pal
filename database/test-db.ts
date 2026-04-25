@@ -1,4 +1,7 @@
-import db from "./schema";
+import { getDatabase, initDatabase } from "./schema";
+
+initDatabase();
+const db = getDatabase();
 
 // Insert sample meter
 const meterId = db.prepare(`

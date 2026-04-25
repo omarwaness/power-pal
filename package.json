@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:icon": "node scripts/build-icon.cjs",
-    "package:win": "npm run build && npm run build:icon && electron-builder --win portable && node scripts/sync-package-output.cjs",
+    "package:win": "node scripts/package-win.cjs nsis",
+    "package:win:portable": "node scripts/package-win.cjs portable",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "electron .",
@@ -55,7 +56,7 @@
   },
   "build": {
     "directories": {
-      "output": "release-build"
+      "output": "release-build-fresh"
     },
     "appId": "com.powerpal.app",
     "productName": "PowerPal",
@@ -70,7 +71,7 @@
     ],
     "win": {
       "icon": "build/icon.ico",
-      "target": "portable"
+      "target": "nsis"
     }
   }
 }

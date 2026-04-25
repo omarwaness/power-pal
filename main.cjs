@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, ipcMain } = require("electron");
 const path = require("path");
 const {
+  initDatabase,
   createMeter,
   getMeters,
   updateMeter,
@@ -47,6 +48,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  const databasePath = path.join(app.getPath("userData"), "powerpal.sqlite");
+
+  initDatabase(databasePath);
   registerIpcHandlers();
   createWindow();
 });

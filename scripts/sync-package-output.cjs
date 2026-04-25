@@ -3,7 +3,10 @@ const path = require("path");
 
 async function syncPackageOutput() {
   const projectRoot = path.resolve(__dirname, "..");
-  const sourceDir = path.join(projectRoot, "release-build");
+  const packageJsonPath = path.join(projectRoot, "package.json");
+  const packageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf8"));
+  const configuredOutputDir = process.env.PACKAGE_OUTPUT_DIR || packageJson.build?.directories?.output || "release-build";
+  const sourceDir = path.join(projectRoot, configuredOutputDir);
   const targetDir = path.join(projectRoot, "dist", "desktop");
 
   await fs.rm(targetDir, { recursive: true, force: true });
