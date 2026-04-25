@@ -38,6 +38,11 @@ function createWindow() {
 
   Menu.setApplicationMenu(null);
 
+  if (app.isPackaged) {
+    win.loadFile(path.join(__dirname, "dist", "index.html"));
+    return;
+  }
+
   win.loadURL("http://localhost:5173/");
 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "electron",
+  "name": "powerpal",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:icon": "node scripts/build-icon.cjs",
+    "package:win": "npm run build && npm run build:icon && electron-builder --win portable && node scripts/sync-package-output.cjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "electron .",
@@ -46,22 +48,28 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
+    "png-to-ico": "^2.1.8",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10"
   },
   "build": {
-    "appId": "com.electricity.app",
-    "productName": "ElectricityApp",
+    "directories": {
+      "output": "release-build"
+    },
+    "appId": "com.powerpal.app",
+    "productName": "PowerPal",
     "asar": true,
     "files": [
       "dist/**/*",
       "main.cjs",
-      "!node_modules/**/*",
+      "database/**/*.cjs",
+      "scripts/**/*.cjs",
       "!src/**/*",
       "!*.map"
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": "portable"
     }
   }
