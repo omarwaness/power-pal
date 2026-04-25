@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { ExportReadings } from "@/components/export-readings"
 import { MeterDialog } from "@/components/meter-dialog"
 import { MetricsSection } from "@/components/metrics-section"
 import { OverviewSection } from "@/components/overview-section"
@@ -50,9 +51,12 @@ function App() {
             </div>
 
             {activeSection === "overview" && (
-              <MeterDialog
-                onCreated={() => setOverviewRefreshKey(current => current + 1)}
-              />
+              <div className="flex items-center gap-2">
+                <ExportReadings />
+                <MeterDialog
+                  onCreated={() => setOverviewRefreshKey(current => current + 1)}
+                />
+              </div>
             )}
           </div>
         </header>

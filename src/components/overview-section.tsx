@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 
+import { PencilIcon, SaveIcon } from 'lucide-react'
+
+import { DeleteMeter } from '@/components/delete-meter'
 import { ReadingDialog } from '@/components/reading-dialog'
+import { UpdateReading } from './update-reading'
 import { cn, formatReadingDate } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import type { MeterResponse } from '../../types/meter'
 import type { ReadingResponse } from '../../types/readings'
 
@@ -16,6 +21,9 @@ type OverviewSectionProps = {
 function OverviewSection({ refreshKey = 0 }: OverviewSectionProps) {
   const [meterCount, setMeterCount] = useState(0)
   const [meters, setMeters] = useState<MeterWithReadings[]>([])
+  const [metersWithVisibleActions, setMetersWithVisibleActions] = useState<
+    number[]
+  >([])
 
   const loadMeters = useCallback(async () => {
     try {
@@ -58,6 +66,14 @@ function OverviewSection({ refreshKey = 0 }: OverviewSectionProps) {
     }
   }, [loadMeters, refreshKey])
 
+  const toggleMeterActions = (meterId: number) => {
+    setMetersWithVisibleActions(current =>
+      current.includes(meterId)
+        ? current.filter(id => id !== meterId)
+        : [...current, meterId]
+    )
+  }
+
   const cards = [
     { label: 'Number of meter', value: String(meterCount) },
     { label: 'Monthly usage', value: '-' },
@@ -83,7 +99,10 @@ function OverviewSection({ refreshKey = 0 }: OverviewSectionProps) {
         </div>
 
         <div className="flex flex-col gap-14">
-          {meters.map(meter => (
+          {meters.map(meter => {
+            const isEditing = metersWithVisibleActions.includes(meter.id)
+
+            return (
             <section key={meter.id} className="flex flex-col gap-4">
               <div className="flex items-start justify-between gap-4 px-1">
                 <div className="flex flex-col gap-1">
@@ -95,11 +114,36 @@ function OverviewSection({ refreshKey = 0 }: OverviewSectionProps) {
                   </p>
                 </div>
 
-                <ReadingDialog
-                  meterId={meter.id}
-                  meterName={meter.name}
-                  onCreated={loadMeters}
-                />
+                <div className="flex items-center gap-2">
+                  <ReadingDialog
+                    meterId={meter.id}
+                    meterName={meter.name}
+                    onCreated={loadMeters}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-2 rounded-full"
+                    onClick={() => toggleMeterActions(meter.id)}
+                  >
+                    {isEditing ? (
+                      <>
+                        <SaveIcon className="size-4" />
+                        Save
+                      </>
+                    ) : (
+                      <>
+                        <PencilIcon className="size-4" />
+                        Edit
+                      </>
+                    )}
+                  </Button>
+                  <DeleteMeter
+                    meterId={meter.id}
+                    meterName={meter.name}
+                    onDeleted={loadMeters}
+                  />
+                </div>
               </div>
 
               <div className="overflow-x-auto rounded-xl border">
@@ -120,6 +164,11 @@ function OverviewSection({ refreshKey = 0 }: OverviewSectionProps) {
                         Difference
                       </th>
                       <th className="px-6 py-4 text-sm font-medium">Gas</th>
+                      {isEditing ? (
+                        <th className="px-6 py-4 text-sm font-medium text-right">
+                          Actions
+                        </th>
+                      ) : null}
                     </tr>
                   </thead>
                   <tbody>
@@ -156,12 +205,21 @@ function OverviewSection({ refreshKey = 0 }: OverviewSectionProps) {
                             {reading.difference}
                           </td>
                           <td className="px-6 py-4 text-sm">{reading.gas}</td>
+                          {isEditing ? (
+                            <td className="px-6 py-2 text-right">
+                              <UpdateReading
+                                reading={reading}
+                                meterName={meter.name}
+                                onUpdated={loadMeters}
+                              />
+                            </td>
+                          ) : null}
                         </tr>
                       ))
                     ) : (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={isEditing ? 6 : 5}
                           className="px-6 py-6 text-center text-sm text-muted-foreground"
                         >
                           No readings available.
@@ -172,7 +230,8 @@ function OverviewSection({ refreshKey = 0 }: OverviewSectionProps) {
                 </table>
               </div>
             </section>
-          ))}
+            )
+          })}
         </div>
       </div>
     </section>
